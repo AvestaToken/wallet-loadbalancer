@@ -1,0 +1,171 @@
+======== MongoDB =====
+Install MongoDB 
+https://docs.mongodb.com/manual/tutorial/install-mongodb-enterprise-on-debian/ 
+
+=====================
+CLI# mongo       
+MongoDB shell version v4.0.2
+connecting to: mongodb://127.0.0.1:27017
+MongoDB server version: 4.0.2
+Server has startup warnings: 
+
+
+MongoDB Enterprise >use admin
+MongoDB Enterprise >db.createUser( { user: "dbadmin",
+          pwd: "<PASSWORD>",
+          roles: [ "userAdminAnyDatabase",
+                   "dbAdminAnyDatabase",
+                   "readWriteAnyDatabase"
+
+] } )
+
+# Enable Authentication 
+
+CLI# cat /etc/mongod.conf 
+# mongod.conf
+# for documentation of all options, see:
+#   http://docs.mongodb.org/manual/reference/configuration-options/
+# Where and how to store data.
+storage:
+  dbPath: /var/lib/mongodb
+  journal:
+    enabled: true
+#  engine:
+#  mmapv1:
+#  wiredTiger:
+# where to write logging data.
+systemLog:
+  destination: file
+  logAppend: true
+  path: /var/log/mongodb/mongod.log
+
+# network interfaces
+net:
+  port: 27017
+  bindIp: 127.0.0.1
+# how the process runs
+processManagement:
+  timeZoneInfo: /usr/share/zoneinfo
+security:
+ authorization: enabled
+
+#operationProfiling:
+#replication:
+#sharding:
+## Enterprise-Only Options:
+#auditLog:
+#snmp:
+
+======
+service  mongod restart
+
+
+
+
+Login  : 
+CLI# mongo --authenticationDatabase login -u dbadmin -p
+MongoDB shell version v4.0.2
+Enter password: <PASSWORD>
+
+
+MongoDB Enterprise >use  login 
+MongoDB Enterprise >db.createRole(
+   {
+     role: "nodeAccess",
+     privileges: [
+       { resource: { db: "accounts", collection: "" }, actions: [ "find", "update", "insert", "remove" ] }
+     ],
+     roles: [
+       { role: "read", db: "accounts" }
+     ]
+   },
+   { w: "majority" , wtimeout: 5000 }
+);
+
+
+MongoDB Enterprise >db.createUser(   { user: "user01",  pwd: "<PASSWORD>", roles : [{"role":"nodeAccess","db":"accounts"}]   }  ) 
+
+MongoDB Enterprise >db.wallets.createIndex( {  walletid: 1  },{ unique: true } )
+MongoDB Enterprise >db.wallets.createIndex( { pubkey : 1},{ unique: true } )
+MongoDB Enterprise >db.wallets.createIndex( { spendkey : 1},{ unique: true } )
+
+
+
+PLAY Mongo :
+
+MongoDB Enterprise > help
+        db.help()                    help on db methods
+        db.mycoll.help()             help on collection methods
+        sh.help()                    sharding helpers
+        rs.help()                    replica set helpers
+        help admin                   administrative help
+        help connect                 connecting to a db help
+        help keys                    key shortcuts
+        help misc                    misc things to know
+        help mr                      mapreduce
+
+        show dbs                     show database names
+        show collections             show collections in current database
+        show users                   show users in current database
+        show profile                 show most recent system.profile entries with time >= 1ms
+        show logs                    show the accessible logger names
+        show log [name]              prints out the last segment of log in memory, 'global' is default
+        use <db_name>                set current database
+        db.foo.find()                list objects in collection foo
+        db.foo.find( { a : 1 } )     list objects in foo where a == 1
+        it                           result of the last line evaluated; use to further iterate
+        DBQuery.shellBatchSize = x   set default number of items to display on shell
+        exit                         quit the mongo shell
+MongoDB Enterprise > show dbs
+accounts  0.000GB
+admin     0.000GB
+config    0.000GB
+local     0.000GB
+MongoDB Enterprise > use  ccounts
+switched to db ccounts
+MongoDB Enterprise > use accounts
+switched to db accounts
+MongoDB Enterprise > show collections
+wallets
+MongoDB Enterprise > db.wallets.find
+db.wallets.find(               db.wallets.findOne(            db.wallets.findOneAndReplace(
+db.wallets.findAndModify(      db.wallets.findOneAndDelete(   db.wallets.findOneAndUpdate(
+MongoDB Enterprise > db.wallets.find()
+MongoDB Enterprise > db.getRoles()
+[
+        {
+                "role" : "nodeAccess",
+                "db" : "accounts",
+                "isBuiltin" : false,
+                "roles" : [
+                        {
+                                "role" : "read",
+                                "db" : "accounts"
+                        }
+                ],
+                "inheritedRoles" : [
+                        {
+                                "role" : "read",
+                                "db" : "accounts"
+                        }
+                ]
+        }
+]
+
+
+
+
+
+
+PALY Login with created user :
+
+CLI$ mongo --authenticationDatabase admin -u user01 -p
+MongoDB shell version v4.0.2
+Enter password: <PASSWORD>
+connecting to: mongodb://127.0.0.1:27017
+MongoDB server version: 4.0.2
+MongoDB Enterprise > use accounts
+switched to db accounts
+MongoDB Enterprise > show collections
+wallets
+MongoDB Enterprise > 
